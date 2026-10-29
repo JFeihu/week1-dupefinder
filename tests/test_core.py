@@ -165,3 +165,23 @@ def test_format_report_lists_files_and_total(tmp_path: Path) -> None:
 
 def test_format_report_when_no_duplicates(tmp_path: Path) -> None:
     assert format_report({}, tmp_path) == "没有发现重复文件"
+
+
+def test_iter_files_excludes_directories(tmp_path: Path) -> None:
+    make_file(tmp_path / "keep.txt", b"a")
+    make_file(tmp_path / "node_modules" / "dep.txt", b"a")
+
+    names = {i.path.name for i in iter_files(tmp_path, exclude={"node_modules"})}
+
+    assert names == {"keep.txt"}
+
+
+def test_find_duplicates_with_exclude(tmp_path: Path) -> None:
+    make_file(tmp_path / "a.txt", b"same")
+    make_file(tmp_path / "b.txt", b"same")
+    make_file(tmp_path / "cache" / "c.txt", b"same")
+
+    dups = find_duplicates(tmp_path, exclude={"cache"})
+
+    assert len(dups) == 1
+    assert len(next(iter(dups.values()))) == 2  # 只剩 a、b 两个

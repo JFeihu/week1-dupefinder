@@ -34,6 +34,10 @@ MinSizeOpt = Annotated[
     typer.Option("--min-size", min=0, help="只统计不小于该字节数的文件（默认 1，忽略空文件）"),
 ]
 JsonOpt = Annotated[bool, typer.Option("--json", help="输出 JSON，方便交给脚本处理")]
+ExcludeOpt = Annotated[
+    list[str] | None,
+    typer.Option("--exclude", "-e", help="要跳过的目录名，可重复指定"),
+]
 
 
 @app.callback()
@@ -43,9 +47,14 @@ def main() -> None:
 
 
 @app.command()
-def find(root: RootArg = Path("."), min_size: MinSizeOpt = 1, as_json: JsonOpt = False) -> None:
+def find(
+    root: RootArg = Path("."),
+    min_size: MinSizeOpt = 1,
+    as_json: JsonOpt = False,
+    exclude: ExcludeOpt = None,
+) -> None:
     """扫描目录并列出重复文件。"""
-    dups = find_duplicates(root, min_size=min_size)
+    dups = find_duplicates(root, min_size=min_size, exclude=exclude or ())
 
     if as_json:
         payload = [

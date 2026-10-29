@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 from collections import defaultdict
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -19,7 +19,7 @@ class FileInfo:
     size: int
 
 
-def iter_files(root: Path) -> Iterator[FileInfo]:
+def iter_files(root: Path, exclude: Collection[str] = ()) -> Iterator[FileInfo]:
     """递归遍历 root 下的所有普通文件。
 
     要求：
@@ -42,12 +42,14 @@ def iter_files(root: Path) -> Iterator[FileInfo]:
         # 跳过隐藏文件/文件夹   相对 root 判断隐藏（不是 p.parts，那是绝对路径的所有层级）
         if any(part.startswith(".") for part in p.relative_to(root).parts):
             continue
+        rel_part = p.relative_to(root).parts
+        if any(part in exclude for part in rel_part):  # 路径里任何一段命中就跳过
+            continue
         # 只保留普通文件
         files.append(FileInfo(path=p, size=p.stat().st_size))
     # 排序
     files.sort(key=lambda info: str(info.path))
     yield from files
-
 
 
 def file_digest(path: Path, chunk_size: int = 1 << 20) -> str:
@@ -56,13 +58,15 @@ def file_digest(path: Path, chunk_size: int = 1 << 20) -> str:
     要求：必须分块读取（默认每块 1 MiB），不能把整个文件读进内存。
     """
     hasher = hashlib.sha256()
-    with path.open('rb') as fh:
-        while chunk:= fh.read(chunk_size):
+    with path.open("rb") as fh:
+        while chunk := fh.read(chunk_size):
             hasher.update(chunk)
         return hasher.hexdigest()
 
 
-def find_duplicates(root: Path, min_size: int = 1) -> dict[str, list[FileInfo]]:
+def find_duplicates(
+    root: Path, min_size: int = 1, exclude: Collection[str] = ()
+) -> dict[str, list[FileInfo]]:
     """找出 root 下内容完全相同的文件，按「哈希 → 文件列表」返回。
 
     要求：
@@ -74,15 +78,15 @@ def find_duplicates(root: Path, min_size: int = 1) -> dict[str, list[FileInfo]]:
     - 没有重复时返回空字典 {}。
     """
     by_size: dict[int, list[FileInfo]] = defaultdict(list)
-    for info in iter_files(root):
+    for info in iter_files(root, exclude=exclude):
         if info.size >= min_size:
             by_size[info.size].append(info)
 
-    result:dict[str, list[FileInfo]] = {}
+    result: dict[str, list[FileInfo]] = {}
 
     for candidates in by_size.values():
         if len(candidates) < 2:
-            continue     # 文件大小位唯一的，直接跳过
+            continue  # 文件大小位唯一的，直接跳过
 
         # 桶内按 hash 分组
         by_hash = defaultdict(list)
@@ -90,16 +94,16 @@ def find_duplicates(root: Path, min_size: int = 1) -> dict[str, list[FileInfo]]:
             by_hash[file_digest(info.path)].append(info)
 
         # 只保留重复组，组内按路径排序
-        for digest,group in by_hash.items():
+        for digest, group in by_hash.items():
             if len(group) >= 2:
-                result[digest] = sorted(group, key=lambda i:str(i.path))
+                result[digest] = sorted(group, key=lambda i: str(i.path))
 
     # 组间按“浪费空间”倒序
     return dict(
         sorted(
             result.items(),
             key=lambda kv: kv[1][0].size * (len(kv[1]) - 1),
-            reverse = True,
+            reverse=True,
         )
     )
 
@@ -122,7 +126,7 @@ def format_report(dups: dict[str, list[FileInfo]], root: Path) -> str:
         return "没有发现重复文件"
 
     lines = [f"发现 {len(dups)} 组重复文件：", ""]
-    for index,group in enumerate(dups.values(), start=1):
+    for index, group in enumerate(dups.values(), start=1):
         lines.append(f"【{index}】{len(group)} 个文件，每个 {group[0].size} 字节")
         for item in group:
             lines.append(f"  - {item.path.relative_to(root).as_posix()}")

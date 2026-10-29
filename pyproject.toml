@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "W1 练手：重复文件查找 CLI（uv + ruff + pytest + pre-commit）"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["typer>=0.12"]
+dependencies = [
+    "typer>=0.12",
+]
 
 [dependency-groups]
 dev = [
