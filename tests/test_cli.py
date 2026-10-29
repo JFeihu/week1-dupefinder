@@ -46,3 +46,10 @@ def test_cli_exclude_skips_directory(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "skip" not in result.stdout
+
+
+def test_cli_version() -> None:
+    result = runner.invoke(app, ["version"])
+
+    assert result.exit_code == 0
+    assert "0.1.0" in result.stdout

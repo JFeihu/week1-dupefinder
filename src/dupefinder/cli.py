@@ -72,5 +72,11 @@ def find(
     typer.echo(format_report(dups, root))
 
 
+@app.command()
+def version() -> None:
+    """显示版本号。"""
+    typer.echo("dupe 0.1.0")
+
+
 if __name__ == "__main__":  # 方便 python -m dupefinder.cli 调试
     app()
