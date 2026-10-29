@@ -1,16 +1,35 @@
-repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
+# pre-commit 配置：提交前自动跑检查
+#
+# 用「本地钩子」：
+# - 不下载仓库、不建虚拟环境，离线可用；
+# - 直接调用 .venv 里的可执行文件，绕开 uv 的缓存目录（避免环境问题）。
+#
+# 换回远程钩子（团队统一版本）的写法：
+#   repos:
+#     - repo: https://github.com/astral-sh/ruff-pre-commit
+#       rev: v0.6.9
+#       hooks: [{id: ruff, args: [--fix]}, {id: ruff-format}]
 
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+repos:
+  - repo: local
     hooks:
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: check-yaml
-      - id: check-toml
-      - id: check-added-large-files
+      - id: ruff-check
+        name: ruff check（检查并自动修复）
+        entry: .venv/Scripts/ruff.exe check --fix
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: ruff-format
+        name: ruff format（格式化）
+        entry: .venv/Scripts/ruff.exe format
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: pytest
+        name: pytest（跑测试）
+        entry: .venv/Scripts/python.exe -m pytest -q
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
