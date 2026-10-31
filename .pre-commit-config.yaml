@@ -27,6 +27,13 @@ repos:
         types: [python]
         pass_filenames: false
 
+      - id: mypy
+        name: mypy（类型检查）
+        entry: .venv/Scripts/mypy.exe src
+        language: system
+        pass_filenames: false
+        types: [python]
+
       - id: pytest
         name: pytest（跑测试）
         entry: .venv/Scripts/python.exe -m pytest -q

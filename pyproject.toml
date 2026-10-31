@@ -14,6 +14,7 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "pre-commit>=3.7",
+    "mypy>=2.4.1",
 ]
 
 [project.scripts]
@@ -36,3 +37,12 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+# 渐进式加严：先要求「每个函数都有类型注解」，再逐步开更严格的检查
+disallow_untyped_defs = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
